@@ -77,7 +77,9 @@ print(SUBMIT "Universe = vanilla\n");
 #print(SUBMIT "Requirements = Memory > 400 && (Arch==\"INTEL\" || Arch==\"X86_64\")");
 print(SUBMIT "Output = $prodSpace/logs/output\n");
 print(SUBMIT "Error = $prodSpace/logs/error\n");
-print(SUBMIT "Requirements = Memory > 400 && (Arch==\"X86_64\")");
+#print(SUBMIT "Requirements = Memory > 400 && (Arch==\"X86_64\")");
+print(SUBMIT "Request_memory = 400");
+print(SUBMIT "Requirements = Arch==\"X86_64\"");
 print(SUBMIT " && (Machine != \"zebra01.spa.umn.edu\" && Machine != \"zebra02.spa.umn.edu\" && Machine != \"zebra03.spa.umn.edu\" && Machine != \"caffeine.spa.umn.edu\")");
 print(SUBMIT " && (Machine != \"gc1-ce.spa.umn.edu\" && Machine != \"gc1-hn.spa.umn.edu\" && Machine != \"gc1-se.spa.umn.edu\" && Machine != \"red.spa.umn.edu\")");
 #print(SUBMIT " && (Machine != \"zebra04.spa.umn.edu\")");
@@ -164,7 +166,11 @@ sub specializeCfg($$@) {
 	    print OUTP "    fileNames=cms.untracked.vstring(\n";
 	    for ($qq=0; $qq<=$#files; $qq++) {
 		$storefile=$files[$qq];
-        $storefile="file:".$storefile;
+		if ($storefile=~/store/) {
+			$storefile=~s|.*/store|/store|;	
+		} else {
+			$storefile="file:".$storefile;
+		}
 			
 		print OUTP "         '".$storefile."'";
 		print OUTP "," if ($qq!=$#files);
