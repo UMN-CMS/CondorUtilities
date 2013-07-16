@@ -18,10 +18,12 @@ if (length($rt)<2) {
 open(SUBMIT,"|condor_submit");
 print(SUBMIT "Executable = $executable\n");
 print(SUBMIT "Universe = vanilla\n");
-#print(SUBMIT "Requirements = Memory > 400 && (Arch==\"INTEL\" || Arch==\"X86_64\")");
-print(SUBMIT "Requirements = Memory > 400 && (Arch==\"X86_64\")");
-#print(SUBMIT " && (Machine == \"zebra01.spa.umn.edu\" || Machine == \"zebra02.spa.umn.edu\" || Machine == \"zebra03.spa.umn.edu\" || Machine == \"zebra04.spa.umn.edu\")");
-print(SUBMIT " && (Machine != \"zebra04.spa.umn.edu\")");
+print(SUBMIT "request_memory = 400\n");
+print(SUBMIT "Requirements = (Arch==\"X86_64\")");
+# Zebras are for remote login, not cluster computing
+print(SUBMIT " && (Machine != \"zebra01.spa.umn.edu\" && Machine != \"zebra02.spa.umn.edu\" && Machine != \"zebra03.spa.umn.edu\" && Machine != \"zebra04.spa.umn.edu\" && Machine != \"caffeine.spa.umn.edu\")");
+# These machines are VMs that run the grid interface
+print(SUBMIT " && (Machine != \"gc1-ce.spa.umn.edu\" && Machine != \"gc1-hn.spa.umn.edu\" && Machine != \"gc1-se.spa.umn.edu\" && Machine != \"red.spa.umn.edu\" && Machine != \"hadoop-test.spa.umn.edu\")");
 print(SUBMIT "\n");
 print(SUBMIT "+CondorGroup=\"cmsfarm\"\n");
 
@@ -29,6 +31,7 @@ $sleep=2;
 
 foreach $cfg (@ARGV) {
 
+    $cfg=$ENV{"PWD"}."/".$cfg;
     $loc=$cfg;
     $loc=~s|cfg/.*||;
 
@@ -39,9 +42,11 @@ foreach $cfg (@ARGV) {
     $elog=$cfg;
     $elog=~s|cfg/|log/|;
     $elog=~s|_cfg.py|.err|;
+    
+    $scramarch=$ENV{"SCRAM_ARCH"};
 
 
-    print(SUBMIT "Arguments = $rt $loc $cfg $log $elog /tmp/nonesuch $sleep\n");
+    print(SUBMIT "Arguments = $scramarch $rt $loc $cfg $log $elog /tmp/nonesuch $sleep\n");
     print(SUBMIT "Queue\n");    
 
     $sleep=$sleep+2;
