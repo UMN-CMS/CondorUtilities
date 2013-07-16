@@ -1,0 +1,61 @@
+#!/bin/sh
+
+SCRAM_ARCH=$1
+RELSPACE=$2
+WORKSPACE=$3
+FILE=$4
+
+if [ $# -gt "4" ]
+then
+LOG=$5
+else
+LOG=${FILE%%.cfg}.log
+fi
+
+if [ $# -gt "5" ]
+then
+ELOG=$6
+else
+ELOG=${FILE%%.cfg}.elog
+fi
+
+if [ $# -gt "6" ]
+then
+/bin/rm -f $7
+fi
+
+if [ $# -gt "7" ]
+then
+sleep $8
+fi
+
+# this is an attempt to make HDFS happy by pre-reading the file
+if [ $# -gt "8" ]
+then
+head $9 > /dev/null 2>/dev/null
+sleep 1
+head $9 > /dev/null 2>/dev/null
+sleep 1
+head $9 > /dev/null 2>/dev/null
+fi
+
+mkdir -p ${WORKSPACE} 
+cd ${WORKSPACE}
+/bin/rm -f ${LOG} ${ELOG} ${LOG}.gz ${ELOG}.gz
+/bin/hostname > ${LOG}
+echo ${RELSPACE} >> ${LOG}
+source /local/cms/sw/cmsset_${SCRAM_ARCH}.sh >> ${LOG} 2>> ${ELOG}
+#set >> ${LOG}
+cd ${RELSPACE}
+#echo ======================== >> ${LOG}
+#scram runtime -sh >> ${LOG} 2>>${ELOG}
+#echo ======================== >> ${LOG}
+cmsenv >> ${LOG} 2>> ${ELOG}
+#echo ======================== >> ${LOG}
+#set >> ${LOG}
+cd ${WORKSPACE}
+cmsRun ${FILE} >> ${LOG} 2>> ${ELOG}
+
+/usr/bin/gzip -f ${LOG}
+
+/usr/bin/gzip -f ${ELOG}
