@@ -64,21 +64,18 @@ class CFGFile:
         """ Add a rootfile or list of rootfiles to add to the CFG as input
         files. Each time this function is called, it overwrites previous
         inputfiles. """
-        # Check if inputFiles is a string, or unicode string
-        if isinstance(inputFiles, basestring):
-            pass
+
+        # Set up lines to insert
+        inputs = ["fileNames = cms.untracked.vstring("]
+        if isinstance(inputFiles, basestring):  # Check if inputFiles is a string, or unicode string
+            inputs.append('"%s"' % inputFiles)
         else:
             for file in inputFiles:
-                pass
+                inputs.append('"%s",' % file)
+        inputs.append("),")
 
-    def addOutputRootFile(self, outputFile):
-        """ Add the root files stored in self.rootFiles to the cfgFile to be
-        run over """
-        (openParenLine, closeParenLine) = self.__returnParenLocation("TFileService", "fileName")
-
-        # Set up a list with the elements we want and insert it into the
-        # file content
-        inputs = ["fileName = cms.string(", '"%s"' % outputFile, "),"]
+        # Get paren positions
+        (openParenLine, closeParenLine) = self.__returnParenLocation("PoolSource", "fileNames")
 
         # This is list slicing combined with list addition
         #
@@ -88,8 +85,19 @@ class CFGFile:
         # We add 1 to the closeParenLine because we want to skip the paren
         # because it is included in the inputs list
         self.cont = self.cont[:openParenLine] + inputs + self.cont[closeParenLine + 1:]
-        for line in self.cont:
-            print line
+
+    def addOutputRootFile(self, outputFile):
+        """ Add the root files stored in self.rootFiles to the cfgFile to be
+        run over """
+
+        # Set up lines to insert
+        inputs = ["fileName = cms.string(", '"%s"' % outputFile, "),"]
+
+        # Get paren positions
+        (openParenLine, closeParenLine) = self.__returnParenLocation("TFileService", "fileName")
+
+        # This is list slicing combined with list addition
+        self.cont = self.cont[:openParenLine] + inputs + self.cont[closeParenLine + 1:]
 
     def __returnParenLocation(self, moduleName, variableName):
         """ Given a moduleName and an variableName, returns the opening and
