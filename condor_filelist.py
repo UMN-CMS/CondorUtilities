@@ -49,9 +49,8 @@ Requirements = (Arch==\"X86_64\")
 
 class CFGFile:
     """ Handles reading, writing, and parsing of a CFGFile """
-    def __init__(self, cfgFile, rootFiles):
+    def __init__(self, cfgFile):
         self.cfgFile = cfgFile
-        self.rootFiles = rootFiles
         self.__readFile()
 
     def __readFile(self):
@@ -61,13 +60,76 @@ class CFGFile:
         f.close()
         self.cont = cont.splitlines()
 
-    def __addRootFiles(self):
+    def addInputRootFiles(self, inputFiles):
+        """ Add a rootfile or list of rootfiles to add to the CFG as input
+        files. Each time this function is called, it overwrites previous
+        inputfiles. """
+        # Check if inputFiles is a string, or unicode string
+        if isinstance(inputFiles, basestring):
+            pass
+        else:
+            for file in inputFiles:
+                pass
+
+    def addOutputRootFile(self, outputFile):
         """ Add the root files stored in self.rootFiles to the cfgFile to be
         run over """
+        (openParenLine, closeParenLine) = self.__returnParenLocation("TFileService", "fileName")
+
+        # Set up a list with the elements we want and insert it into the
+        # file content
+        inputs = ["fileName = cms.string(", '"%s"' % outputFile, "),"]
+
+        # This is list slicing combined with list addition
+        #
+        # We do not add 1 to the openParenLine number because slicing stops at
+        # the entry before you tell it to stop, and we replace this line.
+        #
+        # We add 1 to the closeParenLine because we want to skip the paren
+        # because it is included in the inputs list
+        self.cont = self.cont[:openParenLine] + inputs + self.cont[closeParenLine + 1:]
+        for line in self.cont:
+            print line
+
+    def __returnParenLocation(self, moduleName, variableName):
+        """ Given a moduleName and an variableName, returns the opening and
+        closing line numbers of the parens """
+        inModule = False
+        inVariableName = False
+        openParenLine = None  # Set to None until we find a value
+        closeParenLine = None
+
+        # Find the area to insert files
         for i in xrange(len(self.cont)):
             line = self.cont[i]
-            if "" in line:
-        #TODO: Implement
+
+            # Flag when we are inside the PoolSource
+            if moduleName in line:
+                inModule = True
+
+            # Flag when we are inside the fileNames list
+            if inModule and variableName in line:
+                inVariableName = True
+
+            # Find the opening paren
+            if inVariableName and '(' in line:
+                openParenLine = i
+                if ')' in line:  # Case when all files are given on one line
+                    closeParenLine = i
+
+                loc = self.cont[i].find('(')
+                self.cont[i] = self.cont[i][:loc + 1]  # Strip after the (
+
+                if closeParenLine:
+                    break
+
+            # If not already found, find the close paren
+            if openParenLine and ')' in line:
+                closeParenLine = i
+                break
+
+        return (openParenLine, closeParenLine)
+
 
 class FileList:
     """ Handles a list of files """
@@ -112,7 +174,8 @@ class FileList:
 # Only Runs Interactively
 if __name__ == '__main__':
 
-    # Check for critical environment variables
+    # Check for critical environment variables, exit with an error if we don't
+    # find them
     try:
         localRT = environ["LOCALRT"]
     except KeyError:
@@ -127,9 +190,9 @@ if __name__ == '__main__':
         executable = environ["HOME"] + "/bin/batch_cmsRun"
     except KeyError:
         exit("$HOME not set, so batch_cmsRun not found.")
-    finally:
+    else:
         if not isfile(executable):
-            exit("Can not find ~/bin/batch_cmsRun. Please make sure it exists.")
+            exit("Can not find $HOME/bin/batch_cmsRun. Please make sure it exists.")
 
     # Set Defaults, these are used to set the defaults in the add_options calls
     nBatch = 10
