@@ -52,6 +52,7 @@ class CFGFile:
     def __init__(self, cfgFile):
         self.cfgFile = cfgFile
         self.__readFile()
+        self.tab = "    "  # Tabs ARE spaces
 
     def __readFile(self):
         """ Read in contents of self.cfgFile """
@@ -66,13 +67,17 @@ class CFGFile:
         inputfiles. """
 
         # Set up lines to insert
-        inputs = ["fileNames = cms.untracked.vstring("]
+        inputs = [self.tab + "fileNames = cms.untracked.vstring("]
         if isinstance(inputFiles, basestring):  # Check if inputFiles is a string, or unicode string
-            inputs.append('"%s"' % inputFiles)
+            inputs.append(2 * self.tab + '"%s"' % inputFiles)
         else:
-            for file in inputFiles:
-                inputs.append('"%s",' % file)
-        inputs.append("),")
+            # For each file (except for the last one) add it with a comma
+            for inputFile in inputFiles[:-1]:
+                inputs.append(2 * self.tab + '"%s",' % inputFile)
+            # For the last file, do not put a comma
+            inputs.append(2 * self.tab + '"%s"' % inputFiles[-1])
+
+        inputs.append(self.tab + "),")
 
         # Get paren positions
         (openParenLine, closeParenLine) = self.__returnParenLocation("PoolSource", "fileNames")
@@ -91,7 +96,7 @@ class CFGFile:
         run over """
 
         # Set up lines to insert
-        inputs = ["fileName = cms.string(", '"%s"' % outputFile, "),"]
+        inputs = [self.tab + "fileName = cms.string(", 2 * self.tab + '"%s"' % outputFile, self.tab + "),"]
 
         # Get paren positions
         (openParenLine, closeParenLine) = self.__returnParenLocation("TFileService", "fileName")
