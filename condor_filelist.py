@@ -61,6 +61,17 @@ class CFGFile:
         f.close()
         self.cont = cont.splitlines()
 
+    def write(self, saveLocation=None):
+        """ Save the cfg file. The default location is the file that was read in. """
+        # Check save location
+        if saveLocation is None:
+            saveLocation = self.cfgFile
+        # Save file
+        f = open(saveLocation, 'w')
+        f.write('\n'.join(self.cont))
+        f.flush()
+        f.close()
+
     def addInputRootFiles(self, inputFiles):
         """ Add a rootfile or list of rootfiles to add to the CFG as input
         files. Each time this function is called, it overwrites previous
