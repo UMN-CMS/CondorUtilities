@@ -99,15 +99,14 @@ class CFGFile:
         openParenLine = None  # Set to None until we find a value
         closeParenLine = None
 
-        # Find the area to insert files
         for i in xrange(len(self.cont)):
             line = self.cont[i]
 
-            # Flag when we are inside the PoolSource
+            # Flag when we are inside the module
             if moduleName in line:
                 inModule = True
 
-            # Flag when we are inside the fileNames list
+            # Flag when we are inside the variable list
             if inModule and variableName in line:
                 inVariableName = True
 
@@ -116,9 +115,6 @@ class CFGFile:
                 openParenLine = i
                 if ')' in line:  # Case when all files are given on one line
                     closeParenLine = i
-
-                loc = self.cont[i].find('(')
-                self.cont[i] = self.cont[i][:loc + 1]  # Strip after the (
 
                 if closeParenLine:
                     break
