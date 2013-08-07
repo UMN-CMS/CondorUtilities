@@ -57,11 +57,11 @@ class CondorFile:
         self.header += "Output = %(logDir)s/output\n" % {"logDir": self.logDir}
         self.header += "Error = %(logDir)s/error\n" % {"logDir": self.logDir}
         self.header += "request_memory = 400\n"
-        self.header += "Requirements = (Arch==\"X86_64\")"
+        self.header += 'Requirements = (Arch=="X86_64")'
         # Insert banned machines
         for machine in self.banned_machines:
-            self.header += " && (Machine != \"%s\")" % machine
-        self.header += "\n\n+CondorGroup=\"cmsfarm\"\n\n"
+            self.header += ' && (Machine != "%s")' % machine
+        self.header += '\n\n+CondorGroup="cmsfarm"\n\n'
 
     def addJob(self, scramArch, localRT, jobDir, cfgFile, logFile, elogFile, outputRootFile, sleep, firstInputFile):
         """ Add an 'Arguments' and a 'Queue' command to the condorfile. """
