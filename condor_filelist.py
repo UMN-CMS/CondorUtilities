@@ -21,8 +21,9 @@
 
 
 from os import environ, makedirs
-from os.path import isfile, isdir
+from os.path import isfile, isdir, basename
 from sys import exit
+from math import ceil
 
 Requirements = """
 Executable = %(executable)s
@@ -186,9 +187,20 @@ class FileList:
         """ Allow iteration over the list """
         return self.files.__iter__()
 
-    def pop(self):
-        """ Allow removal and return of an element """
-        return self.files.pop()
+    def pop(self, n=1):
+        """ Allow removal and return of an element. A list of the elements is
+        always returned, even if only one element is asked for. """
+        # Act like normal pop if multiple items are not desired
+        if n <= 1:
+            return [self.files.pop()]
+        else:
+            returnList = []
+            for i in xrange(n):
+                try:
+                    returnList.append(self.files.pop())
+                except IndexError:  # No items left
+                    return returnList
+            return returnList
 
 
 # Only Runs Interactively
@@ -237,15 +249,12 @@ if __name__ == '__main__':
 
     (options, args) = parser.parse_args()
 
-    # Parse the list of files
-    filelist = FileList(options.fileList)
-
     # Set up a default name based on the base config name
     if options.jobName is None:
         if "_cfg" in options.baseConfig:
-            options.jobName = options.baseConfig.split('_cfg')[0]
+            options.jobName = basename(options.baseConfig.split('_cfg')[0])
         else:
-            options.jobName = options.baseConfig.split('.')[0]
+            options.jobName = basename(options.baseConfig.split('.')[0])
 
     # Set up directories
     jobDir = options.prodSpace + '/' + options.jobName + '/'
@@ -257,4 +266,31 @@ if __name__ == '__main__':
         if not isdir(d):
             makedirs(d)
 
-    # print Requirements % { "logDir" : logDir, "executable" : executable }
+    # Open CFG file
+    cfg = CFGFile(options.baseConfig)
+
+    # Loop over files
+    filelist = FileList(options.fileList)
+
+    # Estimate the number of output files and prepare the base filename for
+    # formatting
+    nOutput = int(ceil(len(filelist)/options.nBatch)) - 1  # -1 because we start from 0, so 100 only needs 0-99
+    zeroPad = len(str(nOutput))
+    formatString = "%%0%dd" % zeroPad  # %% is the literal %
+    baseFileName = options.jobName + '_' + "%s" % formatString
+
+    i = 0
+    while len(filelist.files) > 0:
+        # Add number to file name
+        baseNumberedFileName = baseFileName % i
+        # Set output file
+        outputRootFile =  baseNumberedFileName + ".root"
+        cfg.addOutputRootFile(outputRootFile)
+        # Set input files
+        inputFiles = filelist.pop(options.nBatch)
+        cfg.addInputRootFiles(inputFiles)
+        # Write cfg
+        outputCFG =  "/tmp/" + baseNumberedFileName + "_cfg.py"
+        cfg.write(outputCFG)
+        # Update counter
+        i += 1
