@@ -25,27 +25,69 @@ from os.path import isfile, isdir, basename
 from sys import exit
 from math import ceil
 
-Requirements = """
-Executable = %(executable)s
-Universe = vanilla
-Output = %(logDir)s/output
-Error = %(logDir)s/error
-request_memory = 400
-Requirements = (Arch==\"X86_64\")
-&& (Machine != \"zebra01.spa.umn.edu\")
-&& (Machine != \"zebra02.spa.umn.edu\")
-&& (Machine != \"zebra03.spa.umn.edu\")
-&& (Machine != \"zebra04.spa.umn.edu\")
-&& (Machine != \"caffeine.spa.umn.edu\")
-&& (Machine != \"gc1-ce.spa.umn.edu\")
-&& (Machine != \"gc1-hn.spa.umn.edu\")
-&& (Machine != \"gc1-se.spa.umn.edu\")
-&& (Machine != \"red.spa.umn.edu\")
-&& (Machine != \"hadoop-test.spa.umn.edu\")
+class CondorFile:
+    """ Generates a file to submit to condor """
+    def __init__(self, condorFile, executable, logDir):
+        self.condorFile = condorFile
+        self.executable = executable
+        self.logDir = logDir
+        self.__setHeader()
+        self.cont = self.header
 
-+CondorGroup=\"cmsfarm\"
+    def __setHeader(self):
+        """ Just a way to serperate the hardcoded strings from everything else.
+        """
+        # List of machines not to run on
+        self.banned_machines = [
+            "zebra01.spa.umn.edu",
+            "zebra02.spa.umn.edu",
+            "zebra03.spa.umn.edu",
+            "zebra04.spa.umn.edu",
+            "caffeine.spa.umn.edu",
+            "gc1-ce.spa.umn.edu",
+            "gc1-hn.spa.umn.edu",
+            "gc1-se.spa.umn.edu",
+            "red.spa.umn.edu",
+            "hadoop-test.spa.umn.edu"
+            ]
+        
+        # Set up our string
+        self.header = "Executable = %(executable)s\n" % {"executable": self.executable}
+        self.header += "Universe = vanilla\n"
+        self.header += "Output = %(logDir)s/output\n" % {"logDir": self.logDir}
+        self.header += "Error = %(logDir)s/error\n" % {"logDir": self.logDir}
+        self.header += "request_memory = 400\n"
+        self.header += "Requirements = (Arch==\"X86_64\")"
+        # Insert banned machines
+        for machine in self.banned_machines:
+            self.header += " && (Machine != \"%s\")" % machine
+        self.header += "\n\n+CondorGroup=\"cmsfarm\"\n\n"
 
-"""
+    def addJob(self, scramArch, localRT, jobDir, cfgFile, logFile, elogFile, outputRootFile, sleep, firstInputFile):
+        """ Add an 'Arguments' and a 'Queue' command to the condorfile. """
+        self.cont += "# Job to run on %(cfgFile)s\n" % {"cfgFile": cfgFile}
+        self.cont += "%(scramArch)s %(localRT)s %(jobDir)s %(cfgFile)s %(logFile)s %(elogFile)s %(outputRootFile)s %(sleep)s %(firstInputFile)s\n" % {
+            "scramArch": scramArch,
+            "localRT": localRT,
+            "jobDir": jobDir,
+            "cfgFile": cfgFile,
+            "logFile": logFile,
+            "elogFile": elogFile,
+            "outputRootFile": outputRootFile,
+            "sleep": sleep,
+            "firstInputFile": firstInputFile
+            }
+        self.cont += "Queue\n\n"
+
+    def write(self):
+        """ Save the condor file """
+        # Check save location
+        saveLocation = self.condorFile
+        # Save file
+        f = open(saveLocation, 'w')
+        f.write(self.cont)
+        f.flush()
+        f.close()
 
 
 class CFGFile:
@@ -252,24 +294,25 @@ if __name__ == '__main__':
     # Set up a default name based on the base config name
     if options.jobName is None:
         if "_cfg" in options.baseConfig:
-            options.jobName = basename(options.baseConfig.split('_cfg')[0])
+            options.jobName = basename(options.baseConfig.split("_cfg")[0])
         else:
             options.jobName = basename(options.baseConfig.split('.')[0])
 
     # Set up directories
     jobDir = options.prodSpace + '/' + options.jobName + '/'
-    logDir = jobDir + 'log/'
-    cfgDir = jobDir + 'cfg/'
-    dirs = [jobDir, logDir, cfgDir]
+    logDir = jobDir  + "log/"  # For logs from each job
+    cfgDir = jobDir + "cfg/"
+    condorDir = jobDir + "condor/"
+    condorLogDir = condorDir + "log/"
+    condorFile = condorDir + options.jobName + ".condor"
     # Make directories if they do not already exist
-    for d in dirs:
+    for d in [jobDir, logDir, cfgDir, condorDir, condorLogDir]:
         if not isdir(d):
             makedirs(d)
 
-    # Open CFG file
+    # Open files
+    cf = CondorFile(condorFile, executable, logDir)
     cfg = CFGFile(options.baseConfig)
-
-    # Loop over files
     filelist = FileList(options.fileList)
 
     # Estimate the number of output files and prepare the base filename for
@@ -279,18 +322,29 @@ if __name__ == '__main__':
     formatString = "%%0%dd" % zeroPad  # %% is the literal %
     baseFileName = options.jobName + '_' + "%s" % formatString
 
+    # Loop over files
     i = 0
     while len(filelist.files) > 0:
         # Add number to file name
         baseNumberedFileName = baseFileName % i
-        # Set output file
-        outputRootFile =  baseNumberedFileName + ".root"
+        # Set output files
+        outputLogFile = jobDir + baseNumberedFileName + ".log"
+        outputErrLogFile = jobDir + baseNumberedFileName + ".err"
+        outputRootFile = jobDir + baseNumberedFileName + ".root"
         cfg.addOutputRootFile(outputRootFile)
         # Set input files
         inputFiles = filelist.pop(options.nBatch)
         cfg.addInputRootFiles(inputFiles)
         # Write cfg
-        outputCFG =  "/tmp/" + baseNumberedFileName + "_cfg.py"
+        outputCFG =  cfgDir + baseNumberedFileName + "_cfg.py"
         cfg.write(outputCFG)
+        # Add job to condor file
+        cf.addJob(
+                scramArch, localRT, jobDir, outputCFG, outputLogFile,
+                outputErrLogFile, outputRootFile, i*2, inputFiles[0]
+                )
         # Update counter
         i += 1
+
+    # Write Condor file
+    cf.write()
