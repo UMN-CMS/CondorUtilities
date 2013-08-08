@@ -26,6 +26,7 @@ from sys import exit
 from math import ceil
 from subprocess import call
 
+
 class CondorFile:
     """ Generates a file to submit to condor """
     def __init__(self, condorFile, executable, logDir, niceUser):
@@ -306,7 +307,7 @@ if __name__ == '__main__':
 
     # Set up directories
     jobDir = options.prodSpace + '/' + options.jobName + '/'
-    logDir = jobDir  + "log/"  # For logs from each job
+    logDir = jobDir + "log/"  # For logs from each job
     cfgDir = jobDir + "cfg/"
     condorDir = jobDir + "condor/"
     condorLogDir = condorDir + "log/"
@@ -323,7 +324,8 @@ if __name__ == '__main__':
 
     # Estimate the number of output files and prepare the base filename for
     # formatting
-    nOutput = int(ceil(len(filelist)/options.nBatch)) - 1  # -1 because we start from 0, so 100 only needs 0-99
+    # -1 in the following line because we start from 0, so 100 only needs 0-99
+    nOutput = int(ceil(len(filelist) / options.nBatch)) - 1
     zeroPad = len(str(nOutput))
     formatString = "%%0%dd" % zeroPad  # %% is the literal %
     baseFileName = options.jobName + '_' + "%s" % formatString
@@ -342,12 +344,12 @@ if __name__ == '__main__':
         inputFiles = filelist.pop(options.nBatch)
         cfg.addInputRootFiles(inputFiles)
         # Write cfg
-        outputCFG =  cfgDir + baseNumberedFileName + "_cfg.py"
+        outputCFG = cfgDir + baseNumberedFileName + "_cfg.py"
         cfg.write(outputCFG)
         # Add job to condor file
         cf.addJob(
                 scramArch, localRT, jobDir, outputCFG, outputLogFile,
-                outputErrLogFile, outputRootFile, i*2, inputFiles[0]
+                outputErrLogFile, outputRootFile, i * 2, inputFiles[0]
                 )
         # Update counter
         i += 1
