@@ -24,13 +24,15 @@ from os import environ, makedirs
 from os.path import isfile, isdir, basename
 from sys import exit
 from math import ceil
+from subprocess import call
 
 class CondorFile:
     """ Generates a file to submit to condor """
-    def __init__(self, condorFile, executable, logDir):
+    def __init__(self, condorFile, executable, logDir, niceUser):
         self.condorFile = condorFile
         self.executable = executable
         self.logDir = logDir
+        self.niceUser = niceUser
         self.__setHeader()
         self.cont = self.header
 
@@ -50,8 +52,10 @@ class CondorFile:
             "red.spa.umn.edu",
             "hadoop-test.spa.umn.edu"
             ]
-        
+
         # Set up our string
+        if self.niceUser:
+            self.header = "nice_user = True\n"
         self.header = "Executable = %(executable)s\n" % {"executable": self.executable}
         self.header += "Universe = vanilla\n"
         self.header += "Output = %(logDir)s/output\n" % {"logDir": self.logDir}
@@ -66,7 +70,7 @@ class CondorFile:
     def addJob(self, scramArch, localRT, jobDir, cfgFile, logFile, elogFile, outputRootFile, sleep, firstInputFile):
         """ Add an 'Arguments' and a 'Queue' command to the condorfile. """
         self.cont += "# Job to run on %(cfgFile)s\n" % {"cfgFile": cfgFile}
-        self.cont += "%(scramArch)s %(localRT)s %(jobDir)s %(cfgFile)s %(logFile)s %(elogFile)s %(outputRootFile)s %(sleep)s %(firstInputFile)s\n" % {
+        self.cont += "Arguments = %(scramArch)s %(localRT)s %(jobDir)s %(cfgFile)s %(logFile)s %(elogFile)s %(outputRootFile)s %(sleep)s %(firstInputFile)s\n" % {
             "scramArch": scramArch,
             "localRT": localRT,
             "jobDir": jobDir,
@@ -274,12 +278,13 @@ if __name__ == '__main__':
     submitJobs = True
     prodSpace = "/local/cms/user/" + environ["USER"]
     jobName = None
+    niceUser = False
 
     # Command line parsing
     from optparse import OptionParser
 
     usage = "usage: %prog -f FILELIST -b BASECONFIG [Options]"
-    version = "%prog Version 1.0.0\n\nCopyright (C) 2013 Alexander Gude - gude@physics.umn.edu\nThis is free software.  You may redistribute copies of it under the terms of\nthe GNU General Public License <http://www.gnu.org/licenses/gpl.html>.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Alexander Gude."
+    version = "%prog Version Beta 1\n\nCopyright (C) 2013 Alexander Gude - gude@physics.umn.edu\nThis is free software.  You may redistribute copies of it under the terms of\nthe GNU General Public License <http://www.gnu.org/licenses/gpl.html>.\nThere is NO WARRANTY, to the extent permitted by law.\n\nWritten by Alexander Gude."
     parser = OptionParser(usage=usage, version=version)
     parser.add_option("-f", "--file-list", action="store", type="str", dest="fileList", help="an input file containing a list of files to run over, with one file per line")
     parser.add_option("-b", "--base-config", action="store", type="str", dest="baseConfig", help="base config file for the job")
@@ -288,6 +293,7 @@ if __name__ == '__main__':
     parser.add_option("-n", "--batch", action="store", type="int", dest="nBatch", default=nBatch, help="the number of files to run as one job [default 10]")
     parser.add_option("-s", "--start-point", action="store", type="int", dest="startPoint", default=startPoint, help="the file to start with [default 0]")
     parser.add_option("--no-submit", action="store_false", dest="submitJobs", default=submitJobs, help="prevent the script from submitting jobs to condor, only make files [default false]")
+    parser.add_option("--nice", action="store_true", dest="niceUser", default=niceUser, help="only run jobs if no other jobs are waiting for spots [default false]")
 
     (options, args) = parser.parse_args()
 
@@ -311,7 +317,7 @@ if __name__ == '__main__':
             makedirs(d)
 
     # Open files
-    cf = CondorFile(condorFile, executable, logDir)
+    cf = CondorFile(condorFile, executable, logDir, options.niceUser)
     cfg = CFGFile(options.baseConfig)
     filelist = FileList(options.fileList)
 
@@ -348,3 +354,10 @@ if __name__ == '__main__':
 
     # Write Condor file
     cf.write()
+
+    # Submit Condor file
+    if options.submitJobs:
+        retcode = call(["condor_submit", condorFile])
+        if retcode != 0:
+            print "Error returned from condor_submit!"
+            exit(retcode)
