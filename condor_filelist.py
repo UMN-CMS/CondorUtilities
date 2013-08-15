@@ -217,8 +217,17 @@ class FileList:
         # Store only valid unique files
         for line in cont:
             line = line.strip()  # Remove white space and trailing \n
-            if isfile(line) and line not in files:
-                files.append(line)
+            # Parse files in the "/store/" location
+            if '/store/' in line.lower():
+                loc = line.find('/store/')
+                line = line[loc:]  # Keep everything from /store/ onward
+                if line not in files:
+                    files.append(line)
+            # Otherwise make sure they exist, and then add file:
+            elif isfile(line):
+                line = "file:" + line
+                if line not in files:
+                    files.append(line)
 
         self.files = files
 
