@@ -30,12 +30,14 @@ help text:
         --prodSpace (production space) (default /local/cms/user/$USER)
         --nosubmit (don't actually submit, just make files)
 
-`--batch` allows changing the number of data files to run per job.
-`--start` sets the starting number for the first output file.
-`--jobname` sets the name of the job, which is also used as the name of the
-directory created to store the results.
-`--prodSpace` sets the location of the output directory. The directory created
-to store the output files will be created in the location specified with this
-flag.
-`--nosubmit` prevents the jobs from being submitted to Condor; the
-configuration files that would be submitted are still generated though.
+These extra arguments are optional. They have the following function:
+
+* `--batch` allows changing the number of data files to run per job.
+* `--start` sets the starting number for the first output file.
+* `--jobname` sets the name of the job, which is also used as the name of the
+  directory created to store the results.
+* `--prodSpace` sets the location of the output directory. The directory
+  created to store the output files will be created in the location specified
+  with this flag.
+* `--nosubmit` prevents the jobs from being submitted to Condor; the
+  configuration files that would be submitted are still generated though.
