@@ -56,6 +56,6 @@ cmsenv >> ${LOG} 2>> ${ELOG}
 cd ${WORKSPACE}
 cmsRun ${FILE} >> ${LOG} 2>> ${ELOG}
 
-/usr/bin/gzip -f ${LOG}
+gzip --best -f ${LOG}
 
-/usr/bin/gzip -f ${ELOG}
+gzip --best -f ${ELOG}
