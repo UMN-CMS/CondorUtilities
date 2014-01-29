@@ -55,9 +55,10 @@ class CondorFile:
             ]
 
         # Set up our string
+        self.header = ""  # Start blank so that we can always += append
         if self.niceUser:
-            self.header = "nice_user = True\n"
-        self.header = "Executable = %(executable)s\n" % {"executable": self.executable}
+            self.header += "nice_user = True\n"
+        self.header += "Executable = %(executable)s\n" % {"executable": self.executable}
         self.header += "Universe = vanilla\n"
         self.header += "Output = %(logDir)s/output\n" % {"logDir": self.logDir}
         self.header += "Error = %(logDir)s/error\n" % {"logDir": self.logDir}
