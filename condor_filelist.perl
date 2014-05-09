@@ -110,7 +110,7 @@ while ($i<=$#flist) {
     $stub=~s|.*/([^/]+)_cfg.py$|$1|;
     $log="$prodSpace/$jobBase/log/$stub.log";
     $elog="$prodSpace/$jobBase/log/$stub.err";
-    $sleep=($ii*2);
+    $sleep=(($ii*2) % 60)+2;  # Never sleep more than a ~minute, but always sleep at least 2
     print(SUBMIT "Arguments = $arch $rt $prodSpace/$jobBase $jobCfg $log $elog $fname $sleep $jobf[0] \n");
     print(SUBMIT "Queue\n");
 }

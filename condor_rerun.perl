@@ -49,7 +49,7 @@ foreach $cfg (@ARGV) {
     print(SUBMIT "Arguments = $scramarch $rt $loc $cfg $log $elog /tmp/nonesuch $sleep\n");
     print(SUBMIT "Queue\n");    
 
-    $sleep=$sleep+2;
+    $sleep=($sleep % 60)+2;
 }
 
 close(SUBMIT);
