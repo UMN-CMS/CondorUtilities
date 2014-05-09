@@ -8,6 +8,7 @@ $prodSpace="/local/cms/user/".$ENV{"USER"};
 $batch=10;
 $startPoint=0;
 $nosubmit='';
+$use_xrootd=''; # '' is false in perl
 
 
 $executable=$ENV{"HOME"}."/bin/batch_cmsRun";
@@ -16,11 +17,14 @@ $arch=$ENV{"SCRAM_ARCH"};
 
 $jobBase="default";
 
-GetOptions("batch=i" => \$batch,
-	   "start=i" => \$startPoint,
-	   "nosubmit" => \$nosubmit,
-	   "prodspace=s" => \$prodSpace,
-	   "jobname=s" => \$jobBase);
+GetOptions(
+    "batch=i" => \$batch,
+    "start=i" => \$startPoint,
+    "nosubmit" => \$nosubmit,
+    "prodspace=s" => \$prodSpace,
+    "jobname=s" => \$jobBase,
+    "xrootd" => \$use_xrootd
+);
 
 if ($#ARGV<1) {
     print "Usage: [BASE CONFIG] [NAME OF FILE CONTAINING LIST OF FILENAMES] \n\n";
@@ -29,6 +33,7 @@ if ($#ARGV<1) {
     print "    --jobname (name of the job) (default based on base config)\n";
     print "    --prodSpace (production space) (default $prodSpace)\n";
     print "    --nosubmit (don't actually submit, just make files)\n";
+    print "    --xrootd (use xrootd for file access)\n";
     exit(1);
 }
 
@@ -166,7 +171,11 @@ sub specializeCfg($$@) {
 	    for ($qq=0; $qq<=$#files; $qq++) {
 	        $storefile=$files[$qq];
 	        if ($storefile=~/store/) {
-	            $storefile=~s|.*/store|/store|; 
+                if ($use_xrootd) {
+                    $storefile=~s|.*/store|root://xrootd.unl.edu//store|;
+                } else {
+                    $storefile=~s|.*/store|/store|;
+                }
 	        } else {
 	            $storefile="file:".$storefile;
 	        }
