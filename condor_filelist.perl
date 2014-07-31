@@ -23,7 +23,8 @@ GetOptions(
     "nosubmit" => \$nosubmit,
     "prodspace=s" => \$prodSpace,
     "jobname=s" => \$jobBase,
-    "xrootd" => \$use_xrootd
+    "xrootd" => \$use_xrootd,
+    "nice" => \$nice_user
 );
 
 if ($#ARGV<1) {
@@ -34,6 +35,7 @@ if ($#ARGV<1) {
     print "    --prodSpace (production space) (default $prodSpace)\n";
     print "    --nosubmit (don't actually submit, just make files)\n";
     print "    --xrootd (use xrootd for file access)\n";
+    print "    --nice (set nice_user=true)\n";
     exit(1);
 }
 
@@ -89,6 +91,9 @@ print(SUBMIT " && (Machine != \"zebra01.spa.umn.edu\" && Machine != \"zebra02.sp
 print(SUBMIT " && (Machine != \"gc1-ce.spa.umn.edu\" && Machine != \"gc1-hn.spa.umn.edu\" && Machine != \"gc1-se.spa.umn.edu\" && Machine != \"red.spa.umn.edu\" && Machine != \"hadoop-test.spa.umn.edu\")");
 print(SUBMIT "\n");
 print(SUBMIT "+CondorGroup=\"cmsfarm\"\n");
+if ($nice_user) {
+    print(SUBMIT "nice_user = True\n");
+}
 
 open(FLIST,$filelist);
 while (<FLIST>) {
