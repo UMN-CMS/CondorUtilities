@@ -52,9 +52,9 @@ if ($jobBase eq "default") {
 
 
 if (length($rt)<2) {
-	print "You must run \"cmsenv\" in the right release area\n";
-        print "before running this script!\n";
-	exit(1);
+    print "You must run \"cmsenv\" in the right release area\n";
+    print "before running this script!\n";
+    exit(1);
 }
 
 #------------------------
@@ -108,10 +108,10 @@ $ii=$startPoint-1;
 while ($i<=$#flist) {
     $ii++;
 
-    @jobf=();    
+    @jobf=();
     for ($j=0; $j<$batch && $i<=$#flist; $j++) {
-	push @jobf,$flist[$i];
-	$i++;
+        push @jobf,$flist[$i];
+        $i++;
     }
 
     $jobCfg=specializeCfg($cfg,$ii,@jobf);
@@ -136,7 +136,7 @@ sub specializeCfg($$@) {
     $stub2.=sprintf("_%03d",$index);
 
     $mycfg="$prodSpace/$jobBase/cfg/".$stub2."_cfg.py";
-    print "   $inp $index --> $stub2 ($mycfg) \n";  
+    print "   $inp $index --> $stub2 ($mycfg) \n";
     #print "$inp $text\n";
     open(INP,$inp);
     open(OUTP,">$mycfg");
@@ -144,68 +144,68 @@ sub specializeCfg($$@) {
     $had2=0;
     $had3=0;
     while(<INP>) {
-	if (/TFileService/) {
-	    $sector=2;
-	    $had2=1;
-	}
-	if (/PoolOutputModule/) {
-	    $sector=3;
-	    $had3=1;
-	}
-	if (/[.]Source/) {
-	    $sector=1;
-	}
-    # TFile Service Block
-	if ($sector==2 && /^[^\#]*fileName\s*=/) {
-	    if ($had3==1) {
-		$fname="$prodSpace/$jobBase/".$stub2."-hist.root";
-	    } else {
-		$fname="$prodSpace/$jobBase/".$stub2.".root";
-	    }
-	    unlink($fname);
-	    print OUTP "       fileName = cms.string(\"$fname\"),\n";
-    # PoolOutputModule Block
-	} elsif ($sector==3 && /^[^\#]*fileName\s*=/) {
-	    if ($had2==1) {
-            $fname="$prodSpace/$jobBase/".$stub2."-pool.root";
-	    } else {
-		$fname="$prodSpace/$jobBase/".$stub2.".root";
-	    }
-	    unlink($fname);
-	    print OUTP "       fileName = cms.untracked.string(\"$fname\"),\n";
-    # *Source Block (PoolSource, etc.)
-	} elsif ($sector==1 && /^[^\#]*fileNames\s*=/) {
-	    print OUTP "    fileNames=cms.untracked.vstring(\n";
-	    for ($qq=0; $qq<=$#files; $qq++) {
-	        $storefile=$files[$qq];
-	        if ($storefile=~/store/) {
-                if ($use_xrootd) {
-                    $storefile=~s|.*/store|root://xrootd.unl.edu//store|;
+        if (/TFileService/) {
+            $sector=2;
+            $had2=1;
+        }
+        if (/PoolOutputModule/) {
+            $sector=3;
+            $had3=1;
+        }
+        if (/[.]Source/) {
+            $sector=1;
+        }
+        # TFile Service Block
+        if ($sector==2 && /^[^\#]*fileName\s*=/) {
+            if ($had3==1) {
+                $fname="$prodSpace/$jobBase/".$stub2."-hist.root";
+            } else {
+                $fname="$prodSpace/$jobBase/".$stub2.".root";
+            }
+            unlink($fname);
+            print OUTP "       fileName = cms.string(\"$fname\"),\n";
+            # PoolOutputModule Block
+        } elsif ($sector==3 && /^[^\#]*fileName\s*=/) {
+            if ($had2==1) {
+                $fname="$prodSpace/$jobBase/".$stub2."-pool.root";
+            } else {
+                $fname="$prodSpace/$jobBase/".$stub2.".root";
+            }
+            unlink($fname);
+            print OUTP "       fileName = cms.untracked.string(\"$fname\"),\n";
+            # *Source Block (PoolSource, etc.)
+        } elsif ($sector==1 && /^[^\#]*fileNames\s*=/) {
+            print OUTP "    fileNames=cms.untracked.vstring(\n";
+            for ($qq=0; $qq<=$#files; $qq++) {
+                $storefile=$files[$qq];
+                if ($storefile=~/store/) {
+                    if ($use_xrootd) {
+                        $storefile=~s|.*/store|root://xrootd.unl.edu//store|;
+                    } else {
+                        $storefile=~s|.*/store|/store|;
+                    }
                 } else {
-                    $storefile=~s|.*/store|/store|;
+                    $storefile="file:".$storefile;
                 }
-	        } else {
-	            $storefile="file:".$storefile;
-	        }
-			
-		print OUTP "         '".$storefile."'";
-		print OUTP "," if ($qq!=$#files);
-		print OUTP "\n";
-	    }		
-	    print OUTP "     )\n";
-	} else {
-	    print OUTP;
-	}
 
-	$depth++ if (/\{/ && $sector!=0);
-	if (/\}/ && $sector!=0) {
-	    $depth--;
-	    $sector=0 if ($depth==0);
-	}
-#	printf("%d %d %s",$sector,$depth,$_);
-       
+                print OUTP "         '".$storefile."'";
+                print OUTP "," if ($qq!=$#files);
+                print OUTP "\n";
+            }
+            print OUTP "     )\n";
+        } else {
+            print OUTP;
+        }
+
+        $depth++ if (/\{/ && $sector!=0);
+        if (/\}/ && $sector!=0) {
+            $depth--;
+            $sector=0 if ($depth==0);
+        }
+#   printf("%d %d %s",$sector,$depth,$_);
+
     }
     close(OUTP);
-    close(INP);   
+    close(INP);
     return $mycfg;
 }
