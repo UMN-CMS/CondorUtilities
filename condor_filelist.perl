@@ -155,7 +155,8 @@ sub specializeCfg($$@) {
 	if (/[.]Source/) {
 	    $sector=1;
 	}
-	if ($sector==2 && /^[^\#]*fileName/) {
+    # TFile Service Block
+	if ($sector==2 && /^[^\#]*fileName\s*=/) {
 	    if ($had3==1) {
 		$fname="$prodSpace/$jobBase/".$stub2."-hist.root";
 	    } else {
@@ -163,15 +164,17 @@ sub specializeCfg($$@) {
 	    }
 	    unlink($fname);
 	    print OUTP "       fileName = cms.string(\"$fname\"),\n";
-	} elsif ($sector==3 && /^[^\#]*fileName/) {
+    # PoolOutputModule Block
+	} elsif ($sector==3 && /^[^\#]*fileName\s*=/) {
 	    if ($had2==1) {
-		$fname="$prodSpace/$jobBase/".$stub2."-pool.root";
+            $fname="$prodSpace/$jobBase/".$stub2."-pool.root";
 	    } else {
 		$fname="$prodSpace/$jobBase/".$stub2.".root";
 	    }
 	    unlink($fname);
 	    print OUTP "       fileName = cms.untracked.string(\"$fname\"),\n";
-	} elsif ($sector==1 && /^[^\#]*fileNames/) {	    
+    # *Source Block (PoolSource, etc.)
+	} elsif ($sector==1 && /^[^\#]*fileNames\s*=/) {
 	    print OUTP "    fileNames=cms.untracked.vstring(\n";
 	    for ($qq=0; $qq<=$#files; $qq++) {
 	        $storefile=$files[$qq];
