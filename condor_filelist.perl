@@ -57,6 +57,16 @@ if (length($rt)<2) {
     exit(1);
 }
 
+if ($use_xrootd) {
+    # Try to find the user's proxy file
+    open(VOMSY,"voms-proxy-info|");
+    while (<VOMSY>) {
+        if (/path\s+:\s+(\S+)/) {
+            $voms_proxy=$1;
+        }
+    }
+    close(VOMSY);
+}
 #------------------------
 
 print "Setting up a job based on $basecfg into $jobBase using $filelist\n";
@@ -91,6 +101,20 @@ print(SUBMIT " && (Machine != \"zebra01.spa.umn.edu\" && Machine != \"zebra02.sp
 print(SUBMIT " && (Machine != \"gc1-ce.spa.umn.edu\" && Machine != \"gc1-hn.spa.umn.edu\" && Machine != \"gc1-se.spa.umn.edu\" && Machine != \"red.spa.umn.edu\" && Machine != \"hadoop-test.spa.umn.edu\")");
 print(SUBMIT "\n");
 print(SUBMIT "+CondorGroup=\"cmsfarm\"\n");
+if ($use_xrootd) {
+    # If the proxy file exists and is a normal file, we use it
+    if (-f $voms_proxy) {
+        print("Found voms proxy: $voms_proxy\n");
+        print(SUBMIT "should_transfer_files = YES\n");
+        print(SUBMIT "transfer_input_files = $voms_proxy\n");
+        print(SUBMIT "X509UserProxy = $voms_proxy\n");
+    }
+    # Invalid file
+    else {
+        print("No voms proxy found! Please run `voms-proxy-init` and confirm that the file exists at /tmp/x509*\n");
+        exit(1);
+    }
+}
 if ($nice_user) {
     print(SUBMIT "nice_user = True\n");
 }
